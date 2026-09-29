@@ -1,0 +1,9 @@
+{
+  "name": "sfm-with-cpp",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "opencv4",
+    "ceres",
+    "eigen3"
+  ]
+}
