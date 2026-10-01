@@ -1,58 +1,55 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/features2d.hpp>
 #include <Eigen/Dense>
 #include <ceres/ceres.h>
 #include <iostream>
 
-// Simple Ceres Cost Function: f(x) = (10 - x)^2
-struct CostFunctor {
-    template <typename T>
-    bool operator()(const T* const x, T* residual) const {
-        residual[0] = 10.0 - x[0];
-        return true;
-    }
-};
+using namespace cv;
+using namespace std;
 
 int main() {
-    std::cout << "--- Testing Included Packages ---\n\n";
 
-    // ==========================================
-    // 1. OpenCV Example
-    // ==========================================
-    // Create a 300x300 blue image (BGR format)
-    cv::Mat image(300, 300, CV_8UC3, cv::Scalar(255, 0, 0));
-    std::cout << "[OpenCV] Created matrix of size: " 
-              << image.cols << "x" << image.rows << " pixels.\n";
+    // Read image (BGR color by default)
+    cv::Mat img = cv::imread("/Users/aminaizbassar/Documents/cpp_proj/scan65/image/000000.png", cv::IMREAD_COLOR);
+    if (img.empty()) {
+        std::cerr << "Could not read image\n";
+        return 1;
+    }
 
-    // ==========================================
-    // 2. Eigen Example
-    // ==========================================
-    // Create a 3x3 rotation/transformation matrix
-    Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d translation(1.0, 2.0, 3.0);
-    std::cout << "[Eigen] Translation vector:\n" << translation.transpose() << "\n";
+    std::cout << "Size: " << img.cols << "x" << img.rows
+              << ", channels: " << img.channels() << "\n";
 
-    // ==========================================
-    // 3. Ceres Solver Example
-    // ==========================================
-    double x = 0.0; // Initial guess for optimization
-    ceres::Problem problem;
+    // int y = 50, x = 100;  // row, column (note: row first with .at)
 
-    // Add cost function residual block
-    problem.AddResidualBlock(
-        new ceres::AutoDiffCostFunction<CostFunctor, 1, 1>(new CostFunctor),
-        nullptr,
-        &x
-    );
+    // Color pixel: Vec3b = 3 unsigned bytes, in B, G, R order
+    // cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
+    // int b = pixel[0], g = pixel[1], r = pixel[2];
+    // std::cout << "BGR: " << b << ", " << g << ", " << r << "\n";
 
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
-    options.minimizer_progress_to_stdout = false; // Set to true to see solver steps
+    cv::Mat mask = cv::imread("/Users/aminaizbassar/Documents/cpp_proj/scan65/mask/000000.png", cv::IMREAD_GRAYSCALE);
+    // sift doesn't have a constructer and can only be created with a create method
+    // which returns a pointer
+    cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
 
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+    // create vector and matrix to store keypoints and descriptors per image
+    // N: kp.pt (x, y position), kp.size, kp.angle, kp.response, kp.octave
+    std::vector<cv::KeyPoint> keypoints;
+    // N x 128, CV_32F
+    cv::Mat descriptors;
+    
+    // const _OutputArray& wraps descriptors when its passed as an argument
+    // const because in cpp we can't get a reference to a temporaty object 
+    // keypoints are also passed by reference such that both are editable
+    sift -> detectAndCompute(img, mask, keypoints, descriptors);
 
-    std::cout << "[Ceres] Optimized value x = " << x << " (Expected: 10.0)\n\n";
+    std::cout << keypoints.size() << " keypoints, descriptors: "
+              << descriptors.rows << "x" << descriptors.cols << "\n";
 
-    std::cout << "All packages successfully loaded and executed!\n";
+    // Visualize
+    cv::Mat out;
+    cv::drawKeypoints(img, keypoints, out, cv::Scalar::all(-1),
+                      cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::imwrite("keypoints.jpg", out);
+
     return 0;
 }
