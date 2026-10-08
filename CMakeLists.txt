@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(sfm_with_cpp)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 find_package(OpenCV REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -9,7 +13,8 @@ find_package(Eigen3 REQUIRED)
 include_directories(include)
 
 # Add executable and source files
-add_executable(sfm_with_cpp src/main.cpp )
+add_executable(sfm_with_cpp src/main.cpp 
+    src/feature_extractor.cpp)
 
 # Link libraries
 target_link_libraries(sfm_with_cpp PRIVATE 
