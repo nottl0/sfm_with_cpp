@@ -2,4 +2,14 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-void getSiftDescriptors(std::string imgFolder, std::string maskFolder, std::vector<std::vector<cv::KeyPoint>>& keypoints, std::vector<cv::Mat>& descriptors);
+class SiftExtractorWrapper{
+
+    std::string imgFolder;
+    std::string maskFolder;
+    std::vector<std::vector<cv::KeyPoint>>& keypoints;
+    std::vector<cv::Mat>& descriptors;
+
+    public:
+        SiftExtractorWrapper(std::string imgFolder, std::string maskFolder, std::vector<std::vector<cv::KeyPoint>>& keypoints, std::vector<cv::Mat>& descriptors);
+        void getSiftDescriptors();
+};

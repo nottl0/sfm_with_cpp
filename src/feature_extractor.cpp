@@ -2,6 +2,7 @@
 #include <opencv2/features2d.hpp>
 #include <iostream>
 #include <filesystem>
+#include "feature_extractor.h"
 
 // Move keypoints and descriptors inside the class
 // Create class
@@ -9,7 +10,11 @@
 // Check why it takes so long 
 namespace fs = std::filesystem;
 
-void getSiftDescriptors(std::string imgFolder, std::string maskFolder, std::vector<std::vector<cv::KeyPoint>>& keypoints, std::vector<cv::Mat>& descriptors){
+SiftExtractorWrapper::SiftExtractorWrapper(std::string imgFolder, std::string maskFolder, std::vector<std::vector<cv::KeyPoint>>& keypoints, std::vector<cv::Mat>& descriptors)
+    : imgFolder(imgFolder), maskFolder(maskFolder), keypoints(keypoints), descriptors(descriptors){};
+
+
+void SiftExtractorWrapper::getSiftDescriptors(){
     std::cout << "ENTERED getSiftDescriptors\n";
 
     cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
@@ -40,13 +45,13 @@ void getSiftDescriptors(std::string imgFolder, std::string maskFolder, std::vect
     // Sort in alphabetical order
     std::sort(imgPaths.begin(), imgPaths.end());
     std::sort(maskPaths.begin(), maskPaths.end());
-
+    
     // For each ffile in the folder collect keypoints and descriptors
     // Use sorted filenames
     for (int i = 0; i < imgPaths.size(); ++i) {
         cv::Mat img = cv::imread(imgPaths[i], cv::IMREAD_COLOR);
         cv::Mat mask = cv::imread(maskPaths[i], cv::IMREAD_GRAYSCALE);
-        
+
         keypoints.emplace_back();
         descriptors.emplace_back();
 

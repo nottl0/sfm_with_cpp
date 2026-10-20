@@ -3,8 +3,9 @@
 #include <Eigen/Dense>
 #include <ceres/ceres.h>
 #include <iostream>
-#include "feature_extractor.h"
 #include <filesystem>
+#include "feature_extractor.h"
+
 
 using namespace cv;
 using namespace std;
@@ -17,8 +18,8 @@ int main() {
 
     std::vector<std::vector<cv::KeyPoint>> keypoints;
     std::vector<cv::Mat> descriptors;
-
-    getSiftDescriptors(imgFolder, maskFolder, keypoints, descriptors);
+    SiftExtractorWrapper siftWrapper(imgFolder, maskFolder, keypoints, descriptors);
+    siftWrapper.getSiftDescriptors();
 
     return 0;
 }
