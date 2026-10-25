@@ -4,9 +4,9 @@
 #include <ceres/ceres.h>
 #include <iostream>
 #include <filesystem>
-#include "feature_extractor.h"
+#include "sfm.h"
 
-
+// Next step is using descriptors and pairing them across adjasent images
 using namespace cv;
 using namespace std;
 namespace fs = std::filesystem;
@@ -16,10 +16,8 @@ int main() {
     std::string imgFolder = "./scan65/image";
     std::string maskFolder = "./scan65/mask";
 
-    std::vector<std::vector<cv::KeyPoint>> keypoints;
-    std::vector<cv::Mat> descriptors;
-    SiftExtractorWrapper siftWrapper(imgFolder, maskFolder, keypoints, descriptors);
-    siftWrapper.getSiftDescriptors();
-
+    SFM sfm(imgFolder, maskFolder);
+    sfm.computeSiftDescriptors();
+    sfm.pairMatchingPoints();
     return 0;
 }

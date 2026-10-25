@@ -14,7 +14,7 @@ include_directories(include)
 
 # Add executable and source files
 add_executable(sfm_with_cpp src/main.cpp 
-    src/feature_extractor.cpp)
+    src/sfm.cpp)
 
 # Link libraries
 target_link_libraries(sfm_with_cpp PRIVATE 
