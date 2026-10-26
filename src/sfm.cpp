@@ -1,16 +1,14 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 #include "sfm.h"
 
-// Move keypoints and descriptors inside the class
-// Create class
-// Change iterator to first read all and then sort 
-// Check why it takes so long 
 namespace fs = std::filesystem;
 
-SFM::SFM(std::string imgFolder, std::string maskFolder) : imgFolder(imgFolder), maskFolder(maskFolder){};
+SFM::SFM(std::string imgFolder, std::string maskFolder, std::string camerasPath) : 
+    imgFolder(imgFolder), maskFolder(maskFolder), camerasPath(camerasPath){};
 
 void SFM::computeSiftDescriptors(){
     std::cout << "ENTERED getSiftDescriptors\n";
@@ -95,7 +93,7 @@ void SFM::pairMatchingPoints(){
 
     matches.assign(descriptors.size() - 1, {});
 
-    for (int i=0; i < descriptors.size(); ++i){
+    for (int i=0; i < descriptors.size() - 1; ++i){
 
         // Declare knn_matches for the given pair to be populated and filtered later
         std::vector<std::vector<cv::DMatch>> knn_matches;
@@ -140,4 +138,91 @@ void SFM::pairMatchingPoints(){
         std::cout << "Writing to: " << outPath << '\n';
         std::cout << "Success: " << success << '\n';
     }
+}
+
+void SFM::loadCameras(){
+    std::map<std::string, cv::Matx44d> mats;
+    std::ifstream in(camerasPath);
+    std::string line;
+
+    while (std::getline(in, line)) {
+        std::istringstream ss(line);
+        std::string key;
+        ss >> key;
+
+        cv::Matx44d M;
+        for (int r = 0; r < 4; ++r)
+            for (int c = 0; c < 4; ++c)
+                ss >> M(r, c);
+
+        mats[key] = M;
+    }
+    cameraMatrices = std::move(mats);
+}
+
+void SFM::triangulateMatches(){
+    loadCameras();
+    // Build projection matrices P_i = (world_mat_i * scale_mat_i)[:3,:4] for every image
+    std::vector<cv::Matx34d> projMats(imgFiles.size());
+    for (size_t k = 0; k < imgFiles.size(); ++k) {
+        cv::Matx44d worldMat = cameraMatrices["world_mat_" + std::to_string(k)];
+        cv::Matx44d scaleMat = cameraMatrices["scale_mat_" + std::to_string(k)];
+        cv::Matx44d P4 = worldMat * scaleMat;
+
+        cv::Matx34d P;
+        for (int r = 0; r < 3; ++r)
+            for (int c = 0; c < 4; ++c)
+                P(r, c) = P4(r, c);
+        projMats[k] = P;
+    }
+
+    points3D.assign(matches.size(), {});
+
+    for (int i = 0; i < matches.size(); i++){
+        auto& currMatches = matches[i];
+        if (currMatches.empty()) continue;
+
+        std::vector<cv::Point2d> pts1, pts2;
+        pts1.reserve(currMatches.size());
+        pts2.reserve(currMatches.size());
+
+        for (int j = 0; j < currMatches.size(); j++){
+            auto sampleMatch = currMatches[j];
+            int m = sampleMatch.queryIdx;
+            int n = sampleMatch.trainIdx;
+            cv::Point2f p1 = keypoints[i][m].pt;
+            cv::Point2f p2 = keypoints[i + 1][n].pt;
+            pts1.emplace_back(p1.x, p1.y);
+            pts2.emplace_back(p2.x, p2.y);
+        }
+
+        cv::Mat X4; // 4 x N homogeneous points (3d)
+        cv::triangulatePoints(cv::Mat(projMats[i]), cv::Mat(projMats[i + 1]), pts1, pts2, X4);
+
+        std::vector<cv::Point3d> pts3d;
+        pts3d.reserve(X4.cols);
+        for (int col = 0; col < X4.cols; ++col) {
+            double w = X4.at<double>(3, col);
+            if (std::abs(w) < 1e-12) continue;
+            pts3d.emplace_back(
+                X4.at<double>(0, col) / w,
+                X4.at<double>(1, col) / w,
+                X4.at<double>(2, col) / w
+            );
+        }
+
+        points3D[i] = std::move(pts3d);
+        std::cout << "Triangulated " << points3D[i].size()
+                  << " points for pair " << i << "->" << i + 1 << '\n';
+    }
+}
+
+void SFM::exportPointsCSV() {
+    std::string path = "check.csv";
+    std::ofstream out(path);
+    out << "x,y,z\n";
+    for (const auto& pts : points3D)
+        for (const auto& p : pts)
+            out << p.x << "," << p.y << "," << p.z << "\n";
+    std::cout << "Wrote CSV to " << path << '\n';
 }
