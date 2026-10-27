@@ -11,6 +11,7 @@ class SFM{
     std::vector<std::vector<cv::KeyPoint>> keypoints;
     std::vector<cv::Mat> descriptors;
     std::vector<std::vector<cv::DMatch>> matches;
+    std::vector<std::vector<cv::DMatch>> filteredMatches;
     std::vector<std::string> imgFiles;
     std::map<std::string, cv::Matx44d> cameraMatrices;
     std::vector<std::vector<cv::Point3d>> points3D;
@@ -19,6 +20,7 @@ class SFM{
         SFM(std::string imgFolder, std::string maskFolder, std::string camerasPath);
         void computeSiftDescriptors();
         void pairMatchingPoints();
+        void filterMatches();
         void triangulateMatches();
         void loadCameras();
         void exportPointsCSV();

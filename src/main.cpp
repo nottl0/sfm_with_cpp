@@ -6,7 +6,6 @@
 #include <filesystem>
 #include "sfm.h"
 
-// Next step is using descriptors and pairing them across adjasent images
 using namespace cv;
 using namespace std;
 namespace fs = std::filesystem;

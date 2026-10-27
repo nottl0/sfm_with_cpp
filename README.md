@@ -23,3 +23,8 @@ cmake --build build
 ```
 
 The first configure downloads and compiles all dependencies listed in `vcpkg.json`, including OpenCV. This can take a long time, but it only happens once. The executables are placed in `build/`.
+
+
+## The project
+
+This is a refresher I did to practice C++ as well as SFM. Check out https://github.com/Luizerko/minecraft_slam/tree/main/sfm which inspired this mini-project.
